@@ -1,10 +1,11 @@
 <script setup>
 import { ref, computed } from 'vue'
-import { fileToImageData, smoothXor, canvasToPngBlobUrl } from './crypto/imageCrypto.js'
+import { fileToImageData, smoothXor, canvasToBlobUrl, pickExportMime } from './crypto/imageCrypto.js'
 
 const mode = ref('encrypt') // 'encrypt' | 'decrypt'
 
 const file = ref(null)
+const fileMime = ref('') // 记录原图 MIME，解密时按原格式导出
 const originUrl = ref('')
 const resultUrl = ref('')
 const key = ref('')
@@ -14,6 +15,7 @@ const errorMsg = ref('')
 const dragOver = ref(false)
 const fileName = ref('')
 const fileSize = ref(0)
+const resultSize = ref(0) // 结果文件大小
 const scale = 128 // 色块尺度固定，无需用户选择
 
 const modeText = computed(() =>
@@ -32,8 +34,10 @@ function pickFile(f) {
   file.value = f
   fileName.value = f.name
   fileSize.value = f.size
+  fileMime.value = f.type // 记录原图格式
   originUrl.value = URL.createObjectURL(f)
   resultUrl.value = ''
+  resultSize.value = 0
   errorMsg.value = ''
 }
 
@@ -62,7 +66,9 @@ function switchMode(m) {
   file.value = null
   fileName.value = ''
   fileSize.value = 0
+  fileMime.value = ''
   resultUrl.value = ''
+  resultSize.value = 0
   errorMsg.value = ''
 }
 
@@ -78,11 +84,31 @@ async function process() {
   if (!key.value) { errorMsg.value = '请输入密钥'; return }
   busy.value = true
   resultUrl.value = ''
+  resultSize.value = 0
   try {
     const { canvas, ctx, imageData } = await fileToImageData(file.value)
     const result = smoothXor(imageData, key.value, scale)
     ctx.putImageData(result, 0, 0)
-    const url = await canvasToPngBlobUrl(canvas)
+
+    // 加密：固定 PNG（无损，避免有损压缩导致解密失真）
+    // 解密：按原图格式导出（JPEG→JPEG，避免 PNG 膨胀）
+    let exportMime, exportQuality
+    if (mode.value === 'encrypt') {
+      exportMime = 'image/png'
+      exportQuality = undefined
+    } else {
+      const picked = pickExportMime(fileMime.value)
+      exportMime = picked.mime
+      exportQuality = picked.quality
+    }
+
+    const url = await canvasToBlobUrl(canvas, exportMime, exportQuality)
+
+    // 读取结果 blob 大小用于展示
+    const resp = await fetch(url)
+    const blob = await resp.blob()
+    resultSize.value = blob.size
+
     resultUrl.value = url
   } catch (e) {
     errorMsg.value = e.message || '处理失败'
@@ -95,7 +121,15 @@ function downloadResult() {
   if (!resultUrl.value) return
   const a = document.createElement('a')
   a.href = resultUrl.value
-  const ext = mode.value === 'encrypt' ? '-encrypted.png' : '-decrypted.png'
+  // 加密：固定 .png；解密：按原格式扩展名
+  let ext
+  if (mode.value === 'encrypt') {
+    ext = '-encrypted.png'
+  } else {
+    const map = { 'image/jpeg': '.jpg', 'image/jpg': '.jpg', 'image/webp': '.webp', 'image/png': '.png' }
+    const suffix = map[fileMime.value] || '.png'
+    ext = '-decrypted' + suffix
+  }
   const base = (fileName.value || 'image').replace(/\.[^.]+$/, '')
   a.download = base + ext
   document.body.appendChild(a)
@@ -211,11 +245,20 @@ function downloadResult() {
 
       <section v-if="originUrl || resultUrl" class="results">
         <div v-if="originUrl" class="img-card">
-          <div class="img-label">{{ modeText.originLabel }}</div>
+          <div class="img-label">{{ modeText.originLabel }} · {{ fmtSize(fileSize) }}</div>
           <img :src="originUrl" class="preview" alt="原图" />
         </div>
         <div v-if="resultUrl" class="img-card">
-          <div class="img-label">{{ modeText.resultLabel }}</div>
+          <div class="img-label">
+            {{ modeText.resultLabel }} · {{ fmtSize(resultSize) }}
+            <span
+              v-if="resultSize && fileSize"
+              :class="['size-delta', resultSize > fileSize ? 'up' : 'down']"
+            >
+              {{ resultSize > fileSize ? '↑' : '↓' }}
+              {{ fmtSize(Math.abs(resultSize - fileSize)) }}
+            </span>
+          </div>
           <img :src="resultUrl" class="preview" alt="结果" />
           <button class="primary-btn small" @click="downloadResult">
             <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -329,7 +372,10 @@ function downloadResult() {
   background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius);
   padding: 14px; display: flex; flex-direction: column; align-items: center;
 }
-.img-label { color: var(--text-muted); font-size: 13px; margin-bottom: 10px; align-self: flex-start; }
+.img-label { color: var(--text-muted); font-size: 13px; margin-bottom: 10px; align-self: flex-start; display: flex; align-items: center; gap: 8px; }
+.size-delta { font-size: 11px; padding: 2px 6px; border-radius: 4px; font-weight: 500; }
+.size-delta.up { color: var(--danger); background: rgba(248,81,73,.12); }
+.size-delta.down { color: var(--accent); background: rgba(35,134,54,.15); }
 .preview {
   max-width: 100%; max-height: 360px; border-radius: 6px;
   background: repeating-conic-gradient(#1c2128 0% 25%, #0d1117 0% 50%) 50% / 16px 16px;

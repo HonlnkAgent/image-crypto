@@ -47,13 +47,10 @@ export function smoothXor(imageData, key, scale) {
   const { width, height, data } = imageData
   const seed = keyToSeed(key)
 
-  // 三个通道用不同的相位/频率，避免 R/G/B 同步变化导致只偏一种色
-  // 每个通道用两个不同频率的正弦混合，频率比取无理数附近避免周期重复
   const freq1 = (2 * Math.PI) / Math.max(1, scale)
-  const freq2 = freq1 * 1.7320508 // sqrt(3)
-  const freq3 = freq1 * 2.4142135 // 1+sqrt(2)
+  const freq2 = freq1 * 1.7320508
+  const freq3 = freq1 * 2.4142135
 
-  // 密钥影响相位偏移
   const phaseR = (seed & 0xff) / 255 * Math.PI * 2
   const phaseG = ((seed >> 8) & 0xff) / 255 * Math.PI * 2
   const phaseB = ((seed >> 16) & 0xff) / 255 * Math.PI * 2
@@ -64,8 +61,6 @@ export function smoothXor(imageData, key, scale) {
     for (let x = 0; x < width; x++) {
       const i = (y * width + x) * 4
 
-      // 用三角函数生成平滑场，sin -> [-1,1] -> [0,1] -> [0,255]
-      // 多频混合让色块形状自然，不像棋盘
       const rField =
         0.5 + 0.5 * (0.6 * Math.sin(freq1 * x + phaseR) + 0.4 * Math.sin(freq2 * y + phaseR * 1.3))
       const gField =
@@ -80,19 +75,34 @@ export function smoothXor(imageData, key, scale) {
       out[i]     = data[i]     ^ br
       out[i + 1] = data[i + 1] ^ bg
       out[i + 2] = data[i + 2] ^ bb
-      out[i + 3] = data[i + 3] // Alpha 通道原样保留
+      out[i + 3] = data[i + 3]
     }
   }
 
   return new ImageData(out, width, height)
 }
 
-// ---- Canvas -> PNG Blob URL ----
-export function canvasToPngBlobUrl(canvas) {
+// ---- Canvas -> Blob URL ----
+// 加密图固定用 PNG（无损，避免 JPEG 伪影导致解密失真）
+// 解密图用原文件格式（JPEG/PNG/WEBP），避免 JPEG→PNG 膨胀
+export function canvasToBlobUrl(canvas, mimeType = 'image/png', quality) {
   return new Promise((resolve, reject) => {
     canvas.toBlob((blob) => {
       if (!blob) { reject(new Error('导出失败')); return }
       resolve(URL.createObjectURL(blob))
-    }, 'image/png')
+    }, mimeType, quality)
   })
+}
+
+// ---- 根据原文件类型选择导出格式 ----
+// JPEG/WEBP 有损 -> 解密后保持原格式，用 quality 0.92 控制质量
+// PNG/其他 -> 保持 PNG 无损
+export function pickExportMime(originalType) {
+  if (originalType === 'image/jpeg' || originalType === 'image/jpg') {
+    return { mime: 'image/jpeg', quality: 0.92 }
+  }
+  if (originalType === 'image/webp') {
+    return { mime: 'image/webp', quality: 0.92 }
+  }
+  return { mime: 'image/png', quality: undefined }
 }
