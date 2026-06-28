@@ -108,7 +108,14 @@ function downloadResult() {
   <div class="wrap">
     <header class="topbar">
       <div class="brand">
-        <span class="logo">🜃</span>
+        <span class="logo" aria-hidden="true">
+          <!-- 影鸦符号：盾牌 + 鸦羽，与 favicon.svg 同源 -->
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 2 L4 5 V11 C4 16 7 20 12 22 C17 20 20 16 20 11 V5 Z" />
+            <path d="M12 7 L12 14" />
+            <path d="M9 11 L12 14 L15 11" />
+          </svg>
+        </span>
         <div>
           <h1>图密 · Image Crypto</h1>
           <p>纯前端图片加密 · 空间相关 XOR · 连续色块无方块边界</p>
@@ -118,8 +125,20 @@ function downloadResult() {
 
     <main class="main">
       <div class="tabs">
-        <button :class="['tab', { active: mode === 'encrypt' }]" @click="switchMode('encrypt')">🔒 加密</button>
-        <button :class="['tab', { active: mode === 'decrypt' }]" @click="switchMode('decrypt')">🔓 解密</button>
+        <button :class="['tab', { active: mode === 'encrypt' }]" @click="switchMode('encrypt')">
+          <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <rect x="5" y="11" width="14" height="10" rx="2" />
+            <path d="M8 11 V7 a4 4 0 0 1 8 0 v4" />
+          </svg>
+          加密
+        </button>
+        <button :class="['tab', { active: mode === 'decrypt' }]" @click="switchMode('decrypt')">
+          <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <rect x="5" y="11" width="14" height="10" rx="2" />
+            <path d="M8 11 V7 a4 4 0 0 1 7.5 -2" />
+          </svg>
+          解密
+        </button>
       </div>
 
       <section class="panel">
@@ -134,14 +153,28 @@ function downloadResult() {
         >
           <input type="file" accept="image/*" class="file-input" @change="onFileInput" id="fileInput" />
           <label for="fileInput" class="dropzone-inner">
-            <span class="upload-icon">🖼️</span>
+            <span class="upload-icon" aria-hidden="true">
+              <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="5" width="18" height="14" rx="2" />
+                <circle cx="8.5" cy="10" r="1.5" />
+                <path d="M21 16 L16 11 L5 19" />
+                <path d="M12 4 L12 9 M9.5 6.5 L12 4 L14.5 6.5" />
+              </svg>
+            </span>
             <span class="upload-text">点击选择或拖拽图片到此处</span>
             <span class="upload-sub">支持 PNG / JPG / WEBP，纯本地处理，不上传服务器</span>
           </label>
         </div>
 
         <div v-if="fileName" class="file-meta">
-          <span class="file-name">📄 {{ fileName }}</span>
+          <span class="file-name">
+            <svg class="meta-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M14 3 H7 a2 2 0 0 0 -2 2 v14 a2 2 0 0 0 2 2 h10 a2 2 0 0 0 2 -2 V8 Z" />
+              <path d="M14 3 V8 h5" />
+              <path d="M9 13 h6 M9 16 h6" />
+            </svg>
+            {{ fileName }}
+          </span>
           <span class="file-size">{{ fmtSize(fileSize) }}</span>
         </div>
 
@@ -166,7 +199,14 @@ function downloadResult() {
           <span v-else>{{ modeText.action }}</span>
         </button>
 
-        <p v-if="errorMsg" class="error">⚠️ {{ errorMsg }}</p>
+        <p v-if="errorMsg" class="error">
+          <svg class="error-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M12 3 L22 20 H2 Z" />
+            <path d="M12 10 L12 14" />
+            <circle cx="12" cy="17" r="0.5" fill="currentColor" />
+          </svg>
+          {{ errorMsg }}
+        </p>
       </section>
 
       <section v-if="originUrl || resultUrl" class="results">
@@ -177,7 +217,14 @@ function downloadResult() {
         <div v-if="resultUrl" class="img-card">
           <div class="img-label">{{ modeText.resultLabel }}</div>
           <img :src="resultUrl" class="preview" alt="结果" />
-          <button class="primary-btn small" @click="downloadResult">⬇️ 下载图片</button>
+          <button class="primary-btn small" @click="downloadResult">
+            <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M12 4 V16" />
+              <path d="M7 11 L12 16 L17 11" />
+              <path d="M5 20 H19" />
+            </svg>
+            下载图片
+          </button>
         </div>
       </section>
     </main>
@@ -193,7 +240,8 @@ function downloadResult() {
 .topbar { margin-bottom: 28px; }
 .brand { display: flex; align-items: center; gap: 14px; }
 .logo {
-  font-size: 30px; width: 52px; height: 52px;
+  color: var(--accent-blue);
+  width: 52px; height: 52px;
   display: flex; align-items: center; justify-content: center;
   background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius);
 }
@@ -207,9 +255,11 @@ function downloadResult() {
 .tab {
   border: none; background: transparent; color: var(--text-muted);
   padding: 8px 20px; border-radius: 6px; cursor: pointer; font-size: 14px; transition: all .15s;
+  display: inline-flex; align-items: center; gap: 6px;
 }
 .tab:hover { color: var(--text); }
 .tab.active { background: var(--accent); color: #fff; font-weight: 500; }
+.tab-icon { width: 16px; height: 16px; display: block; }
 
 .panel {
   background: var(--bg-card); border: 1px solid var(--border);
@@ -227,7 +277,8 @@ function downloadResult() {
   display: flex; flex-direction: column; align-items: center; gap: 8px;
   padding: 36px 20px; cursor: pointer; text-align: center;
 }
-.upload-icon { font-size: 36px; }
+.upload-icon { color: var(--text-muted); display: inline-flex; }
+.dropzone.over .upload-icon { color: var(--accent-blue); }
 .upload-text { color: var(--text); font-size: 15px; }
 .upload-sub { color: var(--text-muted); font-size: 12px; }
 
@@ -235,7 +286,8 @@ function downloadResult() {
   display: flex; gap: 12px; align-items: center; font-size: 13px;
   color: var(--text-muted); margin: 10px 0 18px;
 }
-.file-name { color: var(--text); }
+.file-name { color: var(--text); display: inline-flex; align-items: center; gap: 6px; }
+.meta-icon { width: 16px; height: 16px; display: block; color: var(--text-muted); }
 
 .field-row { display: flex; gap: 20px; margin-bottom: 18px; flex-wrap: wrap; }
 .field { flex: 1; min-width: 220px; }
@@ -254,27 +306,23 @@ function downloadResult() {
 }
 .ghost-btn:hover { color: var(--text); border-color: var(--text-muted); }
 
-.block-options { display: flex; gap: 6px; flex-wrap: wrap; }
-.block-btn {
-  background: var(--bg-input); border: 1px solid var(--border); border-radius: 6px;
-  color: var(--text-muted); padding: 8px 12px; cursor: pointer; font-size: 13px; transition: all .15s;
-}
-.block-btn:hover { color: var(--text); border-color: var(--text-muted); }
-.block-btn.active { background: var(--accent-blue); color: #fff; border-color: var(--accent-blue); font-weight: 500; }
-
 .primary-btn {
   width: 100%; background: var(--accent); color: #fff; border: none; border-radius: 6px;
   padding: 12px; font-size: 15px; font-weight: 500; cursor: pointer; transition: background .15s;
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
 }
 .primary-btn:hover:not(:disabled) { background: var(--accent-hover); }
 .primary-btn:disabled { opacity: .6; cursor: not-allowed; }
 .primary-btn.small { width: auto; margin-top: 12px; padding: 8px 16px; font-size: 13px; }
+.btn-icon { width: 15px; height: 15px; display: block; }
 
 .error {
   margin: 14px 0 0; color: var(--danger); font-size: 13px;
   background: rgba(248,81,73,.1); border: 1px solid rgba(248,81,73,.4);
   border-radius: 6px; padding: 10px 12px;
+  display: flex; align-items: center; gap: 8px;
 }
+.error-icon { width: 16px; height: 16px; display: block; flex-shrink: 0; }
 
 .results { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 24px; }
 .img-card {
